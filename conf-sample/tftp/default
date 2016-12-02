@@ -1,0 +1,224 @@
+DEFAULT menu
+PROMPT 0
+MENU TITLE Ubuntu MAAS
+TIMEOUT 200
+TOTALTIMEOUT 6000
+ONTIMEOUT ubuntu-enlist
+
+LABEL local
+        MENU LABEL (local)
+        MENU DEFAULT
+        LOCALBOOT -1
+
+label linux-tboot
+        kernel /images/oneiric-x86_64/mboot.c32
+        ipappend 2
+        append /images/oneiric-x86_64/tboot.gz logging=serial,vga,memory  --- /images/oneiric-x86_64/linux intel_iommu=on break=roti initrd=/images/oneiric-x86_64/initrd.gz --- /images/oneiric-x86_64/initrd.gz
+
+LABEL hardy-x86_64
+        kernel /images/hardy-x86_64/linux
+        MENU LABEL hardy-x86_64
+        append initrd=/images/hardy-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/hardy-x86_64 hostname=hardy-x86-64 domain=local.lan suite=hardy
+        ipappend 2
+
+LABEL hardy-x86_64-auto
+        kernel /images/hardy-x86_64/linux
+        MENU LABEL hardy-x86_64-auto
+        append initrd=/images/hardy-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/hardy-x86_64-auto hostname=hardy-x86-64-auto domain=local.lan suite=hardy
+        ipappend 2
+
+LABEL hardy-x86_64-juju
+        kernel /images/hardy-x86_64/linux
+        MENU LABEL hardy-x86_64-juju
+        append initrd=/images/hardy-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/hardy-x86_64-juju hostname=hardy-x86-64-juju domain=local.lan suite=hardy
+        ipappend 2
+
+LABEL lucid-i386
+        kernel /images/lucid-i386/linux
+        MENU LABEL lucid-i386
+        append initrd=/images/lucid-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/lucid-i386 hostname=lucid-i386 domain=local.lan suite=lucid
+        ipappend 2
+
+LABEL lucid-i386-auto
+        kernel /images/lucid-i386/linux
+        MENU LABEL lucid-i386-auto
+        append initrd=/images/lucid-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/lucid-i386-auto hostname=lucid-i386-auto domain=local.lan suite=lucid
+        ipappend 2
+
+LABEL lucid-i386-juju
+        kernel /images/lucid-i386/linux
+        MENU LABEL lucid-i386-juju
+        append initrd=/images/lucid-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/lucid-i386-juju hostname=lucid-i386-juju domain=local.lan suite=lucid
+        ipappend 2
+
+LABEL lucid-x86_64
+        kernel /images/lucid-x86_64/linux
+        MENU LABEL lucid-x86_64
+        append initrd=/images/lucid-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/lucid-x86_64 hostname=lucid-x86-64 domain=local.lan suite=lucid
+        ipappend 2
+
+LABEL lucid-x86_64-auto
+        kernel /images/lucid-x86_64/linux
+        MENU LABEL lucid-x86_64-auto
+        append initrd=/images/lucid-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/lucid-x86_64-auto hostname=lucid-x86-64-auto domain=local.lan suite=lucid
+        ipappend 2
+
+LABEL lucid-x86_64-juju
+        kernel /images/lucid-x86_64/linux
+        MENU LABEL lucid-x86_64-juju
+        append initrd=/images/lucid-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/lucid-x86_64-juju hostname=lucid-x86-64-juju domain=local.lan suite=lucid
+        ipappend 2
+
+LABEL natty-i386
+        kernel /images/natty-i386/linux
+        MENU LABEL natty-i386
+        append initrd=/images/natty-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/natty-i386 hostname=natty-i386 domain=local.lan suite=natty
+        ipappend 2
+
+LABEL natty-i386-auto
+        kernel /images/natty-i386/linux
+        MENU LABEL natty-i386-auto
+        append initrd=/images/natty-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/natty-i386-auto hostname=natty-i386-auto domain=local.lan suite=natty
+        ipappend 2
+
+LABEL natty-i386-juju
+        kernel /images/natty-i386/linux
+        MENU LABEL natty-i386-juju
+        append initrd=/images/natty-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/natty-i386-juju hostname=natty-i386-juju domain=local.lan suite=natty
+        ipappend 2
+
+LABEL natty-x86_64
+        kernel /images/natty-x86_64/linux
+        MENU LABEL natty-x86_64
+        append initrd=/images/natty-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/natty-x86_64 hostname=natty-x86-64 domain=local.lan suite=natty
+        ipappend 2
+
+LABEL natty-x86_64-auto
+        kernel /images/natty-x86_64/linux
+        MENU LABEL natty-x86_64-auto
+        append initrd=/images/natty-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/natty-x86_64-auto hostname=natty-x86-64-auto domain=local.lan suite=natty
+        ipappend 2
+
+LABEL natty-x86_64-juju
+        kernel /images/natty-x86_64/linux
+        MENU LABEL natty-x86_64-juju
+        append initrd=/images/natty-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/natty-x86_64-juju hostname=natty-x86-64-juju domain=local.lan suite=natty
+        ipappend 2
+
+LABEL oneiric-i386
+        kernel /images/oneiric-i386/linux
+        MENU LABEL oneiric-i386
+        append initrd=/images/oneiric-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/oneiric-i386 hostname=oneiric-i386 domain=local.lan suite=oneiric
+        ipappend 2
+
+LABEL oneiric-i386-auto
+        kernel /images/oneiric-i386/linux
+        MENU LABEL oneiric-i386-auto
+        append initrd=/images/oneiric-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/oneiric-i386-auto hostname=oneiric-i386-auto domain=local.lan suite=oneiric
+        ipappend 2
+
+LABEL oneiric-i386-juju
+        kernel /images/oneiric-i386/linux
+        MENU LABEL oneiric-i386-juju
+        append initrd=/images/oneiric-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/oneiric-i386-juju hostname=oneiric-i386-juju domain=local.lan suite=oneiric
+        ipappend 2
+
+LABEL oneiric-x86_64
+        kernel /images/oneiric-x86_64/linux
+        MENU LABEL oneiric-x86_64
+        append initrd=/images/oneiric-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/oneiric-x86_64 hostname=oneiric-x86-64 domain=local.lan suite=oneiric
+        ipappend 2
+
+LABEL oneiric-x86_64-auto
+        kernel /images/oneiric-x86_64/linux
+        MENU LABEL oneiric-x86_64-auto
+        append initrd=/images/oneiric-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/oneiric-x86_64-auto hostname=oneiric-x86-64-auto domain=local.lan suite=oneiric
+        ipappend 2
+
+LABEL oneiric-x86_64-juju
+        kernel /images/oneiric-x86_64/linux
+        MENU LABEL oneiric-x86_64-juju
+        append initrd=/images/oneiric-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/oneiric-x86_64-juju hostname=oneiric-x86-64-juju domain=local.lan suite=oneiric
+        ipappend 2
+
+LABEL precise-i386
+        kernel /images/precise-i386/linux
+        MENU LABEL precise-i386
+        append initrd=/images/precise-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/precise-i386 hostname=precise-i386 domain=local.lan suite=precise
+        ipappend 2
+
+LABEL precise-i386-auto
+        kernel /images/precise-i386/linux
+        MENU LABEL precise-i386-auto
+        append initrd=/images/precise-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/precise-i386-auto hostname=precise-i386-auto domain=local.lan suite=precise
+        ipappend 2
+
+LABEL precise-i386-juju
+        kernel /images/precise-i386/linux
+        MENU LABEL precise-i386-juju
+        append initrd=/images/precise-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/precise-i386-juju hostname=precise-i386-juju domain=local.lan suite=precise
+        ipappend 2
+
+LABEL precise-x86_64
+        kernel /images/precise-x86_64/linux
+        MENU LABEL precise-x86_64
+        append initrd=/images/precise-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/precise-x86_64 hostname=precise-x86-64 domain=local.lan suite=precise
+        ipappend 2
+
+LABEL precise-x86_64-auto
+        kernel /images/precise-x86_64/linux
+        MENU LABEL precise-x86_64-auto
+        append initrd=/images/precise-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/precise-x86_64-auto hostname=precise-x86-64-auto domain=local.lan suite=precise
+        ipappend 2
+
+LABEL precise-x86_64-juju
+        kernel /images/precise-x86_64/linux
+        MENU LABEL precise-x86_64-juju
+        append initrd=/images/precise-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/precise-x86_64-juju hostname=precise-x86-64-juju domain=local.lan suite=precise
+        ipappend 2
+
+LABEL quantal-i386
+        kernel /images/quantal-i386/linux
+        MENU LABEL quantal-i386
+        append initrd=/images/quantal-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/quantal-i386 hostname=quantal-i386 domain=local.lan suite=quantal
+        ipappend 2
+
+LABEL quantal-i386-auto
+        kernel /images/quantal-i386/linux
+        MENU LABEL quantal-i386-auto
+        append initrd=/images/quantal-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/quantal-i386-auto hostname=quantal-i386-auto domain=local.lan suite=quantal
+        ipappend 2
+
+LABEL quantal-i386-juju
+        kernel /images/quantal-i386/linux
+        MENU LABEL quantal-i386-juju
+        append initrd=/images/quantal-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/quantal-i386-juju hostname=quantal-i386-juju domain=local.lan suite=quantal
+        ipappend 2
+
+LABEL quantal-x86_64
+        kernel /images/quantal-x86_64/linux
+        MENU LABEL quantal-x86_64
+        append initrd=/images/quantal-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/quantal-x86_64 hostname=quantal-x86-64 domain=local.lan suite=quantal
+        ipappend 2
+
+LABEL quantal-x86_64-auto
+        kernel /images/quantal-x86_64/linux
+        MENU LABEL quantal-x86_64-auto
+        append initrd=/images/quantal-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/quantal-x86_64-auto hostname=quantal-x86-64-auto domain=local.lan suite=quantal
+        ipappend 2
+
+LABEL quantal-x86_64-juju
+        kernel /images/quantal-x86_64/linux
+        MENU LABEL quantal-x86_64-juju
+        append initrd=/images/quantal-x86_64/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/quantal-x86_64-juju hostname=quantal-x86-64-juju domain=local.lan suite=quantal
+        ipappend 2
+
+LABEL ubuntu-enlist
+        kernel /images/precise-i386/linux
+        MENU LABEL ubuntu-enlist
+        append initrd=/images/precise-i386/initrd.gz  locale=  log_host=130.203.84.43 locale=en_US text priority=critical log_port=514 netcfg/choose_interface=auto  auto url=http://192.168.0.1/cblr/svc/op/ks/profile/ubuntu-enlist hostname=ubuntu-enlist domain=local.lan suite=precise
+        ipappend 2
+
+
+
+MENU end

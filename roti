@@ -1,0 +1,346 @@
+# The Network-Based Root of Trust for Installation (NetROTI) additions are ...
+#
+#  Copyright (c) 2012 The Pennsylvania State University
+#  Systems and Internet Infrastructure Security Laboratory
+#
+# they were developed by:
+# 
+#  Joshua Schiffman <jschiffm@cse.psu.edu>
+#  Trent Jaeger <tjaeger@cse.psu.edu>
+#
+# Unless otherwise noted, all code additions are ...
+#
+#  * Licensed under the Apache License, Version 2.0 (the "License");
+#  * you may not use this file except in compliance with the License.
+#  * You may obtain a copy of the License at
+#  *
+#  * http://www.apache.org/licenses/LICENSE-2.0
+#  *
+#  * Unless required by applicable law or agreed to in writing, software
+#  * distributed under the License is distributed on an "AS IS" BASIS,
+#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  * See the License for the specific language governing permissions and
+#  * limitations under the License.
+
+
+
+#!/bin/sh
+PREREQ="udev"
+prereqs()
+{
+     echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+     prereqs
+     exit 0
+     ;;
+esac
+
+# Wait for devices
+sleep 30
+
+. /roti/installer_includes
+
+# Set up the network
+msg "Setting up the network"
+ifconfig eth1 192.168.0.50 netmask 255.255.255.0
+#ipconfig eth1
+
+
+# restore mbr
+msg "Overwriting MBR on /dev/${DISK}"
+#/bin/dd if=${MBR} of=/dev/${DISK} bs=512 count=1
+#msg "Update partition table"
+sfdisk --force /dev/${DISK} < ${SF}
+
+# Notify the kernel it has partitions.
+msg "Notifying kernel of partition update"
+/bin/partprobe -s /dev/${DISK}
+
+
+# restore the primary partition after download
+if [ ${DBG} == "y" ]; then 
+
+    msg "Downloading disk image"
+    wget http://${SERVER}/${IMG}
+
+    # Measure the FS as it should be from the restored image
+    hlog ${IMG}
+
+    msg "Restoring /dev/${DISK}1 from ${IMG}"
+    #/sbin/partimage -m -b -B='' restore /dev/${DISK}1 ${IMG}    
+    /sbin/fsarchiver restfs ${IMG} id=0,dest=/dev/${DISK}1
+    msg "Mounting rootfs"
+    mount -t ext4 /dev/${DISK}1 ${BASE}
+
+    echo "/dev/${DISK}1 is mounted"
+    echo "base is ${BASE}"
+
+    mkdir ${BASE}/roti
+
+else
+    #Install from the network
+    msg "Restoring /dev/${DISK}1 from ${IMG} at ${SERVER}"
+    /sbin/partimage -m -b -B='' -s ${SERVER} -U client -P pxe restore /dev/${DISK}1 ${IMG}
+
+    msg "Mounting rootfs"
+    mount -t ext4 /dev/${DISK}1 /root
+    
+    mkdir ${BASE}/roti
+    
+    # Measure the FS as it should be from the restored image
+    msg "Hashing the installed image on /dev/${DISK}1"
+    cd ${BASE}
+    find . -type f -print0 | /bin/xargs -0 /bin/sha1sum >> ${BASE}/roti/disk.sums
+    cd /
+    hlog ${BASE}/roti/disk.sums
+fi
+
+# restore the swap partition
+#msg "Restoring /dev/${DISK}5 from ${SWP} on ${SERVER}"
+#/sbin/partimage -m -b -s ${SERVER} -U client -P pxe restore /dev/${DISK}5 ${SWP}
+
+# Post-install setup
+
+msg "Configuring Networking"
+msg "Bringing up eth0"
+
+
+ipconfig eth0 > ${NET_LOG}
+IP=`grep "address:" ${NET_LOG} | mawk '{ print $2 }'`
+DOMAIN=`grep "domain :" ${NET_LOG} | mawk '{ print $3 }'`
+NS=`grep "gateway:" ${NET_LOG} | mawk '{ print $5 }'`
+echo nameserver ${NS} > /etc/resolv.conf
+
+MAC0=`ifconfig eth0 | grep HWaddr | mawk '{ print $NF }'`
+MAC1=`ifconfig eth1 | grep HWaddr | mawk '{ print $NF }'`
+
+ifconfig eth1 down
+
+msg "Looking up hostname"
+
+echo "IP is ${IP}"
+FQ=`host ${IP} | mawk '{ print $NF }'`
+msg "We are ${FQ}"
+
+HOST=`echo ${FQ} | mawk '{ split($1, A, "."); print A[1] }'`
+OLD_HOST="XXX"
+if [ -s ${BASE}/etc/hostname ]; then 
+    OLD_HOST=`cat ${BASE}/etc/hostname`
+fi
+
+
+msg "Replacing old hostname (${OLD_HOST}) with ${HOST}"
+echo ${HOST} > ${BASE}/etc/hostname
+sed -i "s/${OLD_HOST}/${HOST}/g" ${BASE}/etc/hosts
+
+
+msg "Setting up SSH Host Keys"
+cat << 'EOF' > ${BASE}/roti/ssh_setup.sh
+#!/bin/bash
+
+rm /etc/ssh/ssh_host_*
+/usr/bin/ssh-keygen -t rsa -N "" -f /etc/ssh/ssh_host_rsa_key
+/usr/bin/ssh-keygen -t dsa -N "" -f /etc/ssh/ssh_host_dsa_key
+
+EOF
+
+chmod a+x ${BASE}/roti/ssh_setup.sh
+chroot ${BASE} /roti/ssh_setup.sh
+rm ${BASE}/roti/ssh_setup.sh
+
+
+msg "Fixing UDEV Net rules"
+
+echo SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="${MAC0}", ATTR{type}=="1", KERNEL=="eth*", NAME="eth0" > ${BASE}/etc/udev/rules.d/70-persistent-net.rules
+
+echo SUBSYSTEM=="net", ACTION=="add", DRIVERS=="?*", ATTR{address}=="${MAC1}", ATTR{type}=="1", KERNEL=="eth*", NAME="eth1" > ${BASE}/etc/udev/rules.d/70-persistent-net.rules
+
+msg "Setting up TPM"
+msg "Trying to take ownership"
+
+# Cannot takeownership while using Tboot
+#cd ${BASE}/roti/
+#/bin/takeown siis
+
+msg "Creating AIK"
+/bin/createkey -t s ${BASE}/roti/roti-sign 0x40000000
+
+msg "Evicting old keys"
+/bin/evictkey all 2>/dev/null
+
+msg "Loading our AIK"
+AIK=`/bin/loadkey 0x40000000 ${BASE}/roti/roti-sign.key`
+
+
+msg "Finished initializing TPM"
+
+
+msg "Creating swap on /dev/${DISK}5"
+mkswap /dev/${DISK}5
+SWP_UUID="UUID=`blkid -o value -s UUID /dev/${DISK}5`"
+OLD_UUID=`grep "swap    sw" ${BASE}/etc/fstab | mawk '{ print $1 }'` 
+
+msg "Modifying fstab"
+echo "none  /sys/kernel/security    securityfs  defaults    0   0" >> ${BASE}/etc/fstab
+echo "none /tmp tmpfs defaults,noauto 0 0" >> ${BASE}/etc/fstab
+echo "none /var tmpfs defaults,noauto 0 0" >> ${BASE}/etc/fstab
+echo "none /etc tmpfs defaults,noauto 0 0" >> ${BASE}/etc/fstab
+sed -i "s/${OLD_UUID}/${SWP_UUID}/g" ${BASE}/etc/fstab
+msg "Setting up pre-boot hashing"
+
+cat << 'EOF' > ${BASE}/etc/initramfs-tools/hooks/fsinit
+#!/bin/sh
+
+PREREQ=""
+
+prereqs()
+{
+		  echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+		  prereqs
+		  exit 0
+		  ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+cp /etc/fstab ${DESTDIR}/etc/
+
+#echo tpm_tis >> /etc/initramfs-tools/modules
+
+copy_exec /usr/bin/find /bin
+copy_exec /usr/bin/xargs /bin
+copy_exec /usr/bin/sha1sum /bin
+copy_exec /usr/sbin/extend /bin
+copy_exec /usr/sbin/listkeys /bin
+copy_exec /usr/bin/tail /bin
+copy_exec /usr/bin/mawk /bin
+copy_exec /usr/bin/free /bin/free
+copy_exec /sbin/swapon /bin/swapon
+copy_exec /bin/tar /bin
+
+EOF
+
+
+cat << 'EOF' > ${BASE}/etc/initramfs-tools/scripts/init-bottom/fsinit
+#!/bin/sh
+
+PREREQ="udev"
+
+prereqs()
+{
+		  echo "$PREREQ"
+}
+
+case $1 in
+# get pre-requisites
+prereqs)
+		  prereqs
+		  exit 0
+		  ;;
+esac
+
+HASH_TARGETS="home lib sbin usr bin root boot"
+ROTI_PCR="11"
+
+EOF
+
+echo /bin/swapon -a >> ${BASE}/etc/initramfs-tools/scripts/init-bottom/fsinit
+
+cat << 'EOF' >> ${BASE}/etc/initramfs-tools/scripts/init-bottom/fsinit
+
+#mount -t tmpfs tmpfs -o size=256M /root/var
+#mount -t tmpfs tmpfs -o size=256M /root/tmp
+#mount -t tmpfs tmpfs -o size=256M /root/etc
+
+#cp -a /root/var.skel/* /root/var
+#cp -a /root/etc.skel/* /root/etc
+#tar -xpzf /root/roti/roti_skel.tar.gz -C /
+
+# hash the root fs
+cd /root
+mkdir -p /root/dev/hashes
+
+mount --bind /root/dev /dev
+echo "Hashing the filesystem for ROTI verification"
+echo "[`date +%H:%M:%S:%N`]" >> /root/dev/hashes/time
+/bin/find ${HASH_TARGETS} -type f -print0 | /bin/xargs -0 /bin/sha1sum >> /root/dev/hashes/boot.sums
+HASH=`/bin/sha1sum /root/dev/hashes/boot.sums | /bin/mawk '{ print $1 }'`
+/bin/extend ${ROTI_PCR} ${HASH}
+echo "[`date +%H:%M:%S:%N`]" >> /root/dev/hashes/time
+umount /dev
+cd /
+
+EOF
+
+chmod a+x ${BASE}/etc/initramfs-tools/hooks/fsinit
+chmod a+x ${BASE}/etc/initramfs-tools/scripts/init-bottom/fsinit
+
+# Load tpm_tis module
+echo tpm_tis >> ${BASE}/etc/initramfs-tools/modules
+
+cp /bin/extend /root/usr/sbin/
+cp /bin/listkeys /root/usr/sbin/
+
+# Fix up grub
+msg "Updating Grub"
+mount --bind /proc ${BASE}/proc
+mount --bind /dev ${BASE}/dev
+mount --bind /sys ${BASE}/sys
+
+# Fix the uuid
+#tune2fs -U `uuidgen` /dev/sdb1
+#tune2fs -U `uuidgen` /dev/sdb2
+
+chroot ${BASE} su -c "grub-install --root-directory=/ /dev/${DISK}"
+chroot ${BASE} su -c "update-grub"
+
+umount ${BASE}/sys
+umount ${BASE}/dev
+umount ${BASE}/proc
+
+msg "Updating initrds."
+mount -t proc none ${BASE}/proc -onodev,noexec,nosuid
+chroot ${BASE} su -c "update-initramfs -u"
+umount ${BASE}/proc
+
+# Make roti archive
+msg "Creating ROTI archive"
+tar cpzf ${BASE}/roti/roti_skel.tar.gz /root/etc/ /root/var/
+
+msg "Hashing filesystem"
+cd ${BASE}
+find ${HASH_TARGETS} -type f -print0 | /bin/xargs -0 /bin/sha1sum >> ${BASE}/roti/installed.sums
+cd /
+hlog ${BASE}/roti/installed.sums
+
+msg "Generating Quote file"
+
+
+KEY=`/bin/listkeys | mawk '{ print $NF }'`
+echo ${AIK}
+NONCE=`echo -n ${FQ} | sha1sum | mawk '{ print $1 }'`
+echo $NONCE
+
+/bin/quote ${AIK} ${ROTI_MASK} ${NONCE} > ${BASE}/roti/quote.file
+
+msg "Recording PCRs" 
+
+cat /sys/class/misc/tpm0/device/pcrs >> ${INSTALL_LOG}
+
+#msg "Cleaning up"
+
+#rm -rf /root/etc/* /root/var/*
+
+msg "Moving log file"
+
+mv ${INSTALL_LOG} ${BASE}/roti/
+mv ${NET_LOG} ${BASE}/roti/
+
+reboot

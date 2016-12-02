@@ -1,0 +1,147 @@
+This document lists steps and instructions for the installation of NetROTI project. Throughout the document, we will refer the machine to be deployed as the target machine. The machine with installation files as well as Cobbler as server. We will use the secondary NIC on both target and server for the communication.
+
+This document is created for Ubuntu 11.10 (Oneiric Ocelot) server edition. 
+
+On Target:
+
+1) Hardware preparation on target machine. (This may differ on different machines)
+  
+  Enable PXE boot on secondary NIC (in BIOS setting)
+	
+	On DELL M620, select PXE under
+	BIOS->Device Settings->Integrated NIC 1Port 2:Intel(R) Ethernet->NIC Configuration->Legacy Boot Protocol
+
+	For Intro to PXE boot, refer to "http://en.wikipedia.org/wiki/Preboot_Execution_Environment"
+	For setting up the PXE server, refer to the Cobbler section below
+  
+  Enable and clear TPM/TXT (in BIOS setting)
+	
+	On DELL M620, select Acticate to activate TPM under
+	BIOS->System BIOS>System Security->TPM Activation
+	On the same page, select TPM Clear to reset TPM. Select Intel(R) TXT to enable TXT.
+	
+	(Note: TPM reset and Enable TXT cannot be performed at the same time. Reset TPM, take ownership and then reboot to enable TXT.
+	Tools for operating TPM can be found at "https://sourceforge.net/projects/ibmswtpm/". Follow the Readme of libtpm. 
+	
+	We will also need some executables (i.e. extend and quote) from libtpm too. Install libtpm and specify their location at roti_hook script.
+	
+	After compiling libtpm and other supporting binaries, using command "takeown PASSWORD" to take the ownership of the TPM.) 
+	
+	For DELL M620, system setup mannual can be found at "http://support.dell.com/support/edocs/systems/pem/12GOM/m620/en/m620omen.pdf". For other machines, use corresponding BIOS settings.
+
+On Server:
+
+2) Setup Cobbler
+
+  Setup IP address for secondary NIC
+	ifconfig eth1 192.168.0.1 netmask 255.255.255.0
+
+  Install Cobbler
+	sudo apt-get install cobbler cobbler-web
+  
+  Modify /etc/cobbler/settings, setup server entries to point to the server(In this case, 192.168.0.1 is the IP address for the secondary NIC of the server)
+	next_server: 192.168.0.1
+	server: 192.168.0.1
+
+  Install dnsmasq
+	sudo apt-get install dnsmasq
+
+  Modify /etc/cobbler/settings, let cobbler manage both dns and dhcp
+	manage_dhcp: 1
+	manage_dns: 1
+
+  Modify /etc/cobbler/modules.conf, set dns and dhcp manager to be dnsmasq
+	[dns]
+	module = manage_dnsmasq
+	[dhcp]
+	module = manage_dnsmasq
+
+  Modify /etc/cobbler/dnsmasq.template
+	dhcp-range=192.168.0.5,192.168.0.200
+
+  Apply the changes
+	sudo cobbler sync
+  
+  Restart Cobbler server
+	sudo service cobbler restart
+
+  Refer to "https://help.ubuntu.com/community/Cobbler" for more details of Cobbler
+
+3) Setup tboot
+  
+  In Ubuntu, install tboot
+	sudo apt-get install tboot
+
+  Copy tboot kernel to image directory
+	cp /boot/tboot.gz /var/lib/tftpboot/images/
+
+  Download syslinux and copy comboot module to image directory
+
+	wget http://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-4.04.tar.gz
+	tar xvzf syslinux-4.04.tar.gz
+	cp syslinux-4.04/com32/mboot/mboot.c32 /var/lib/tftpboot/images/
+
+	Refer to "http://www.syslinux.org/wiki/index.php/Mboot.c32" for multiboot
+
+  Modify /var/lib/tftpboot/pxelinux.cfg/default to add the following entry
+
+	label linux-tboot
+        kernel /images/mboot.c32
+        ipappend 2
+        append /images/tboot.gz logging=serial,vga,memory  --- /images/linux intel_iommu=on initrd=/images/initrd.gz --- /images/initrd.gz
+
+4) Setup disk image
+
+  Disk image should be an image of a clean system. Configure a clean system and then use fsarchiver to create such an image.(Using ext4 for root partition) 
+
+  In Ubuntu, install Fsarchiver
+	sudo apt-get install fsarchiver
+
+  Create a disk image using fsarchiver, assuming root partition is /dev/sda1 (using fsarchiver on a mounted partition can be risky. Better to boot into another partition and do so)
+	fsarchiver savefs ./image.fsa /dev/YOUR_ROOT_PARTITION
+
+  Move disk image to web server directory
+	cp image.fsa /var/www/base.000
+
+5) Setup partition table
+
+  This has been done automatically in the roti_hook script. Using the following command only when you want to use partition table of another machine.
+  **	sfdisk /dev/sda -d > ./roti.sf
+
+6) Updating initrd
+
+  Copy roti scripts
+	chmod +x roti_hook
+	chmod +x roti
+	cp roti_hook /usr/share/initramfs-tools/hooks/
+	mkdir /usr/share/initramfs-tools/scripts/roti
+	cp roti /usr/share/initramfs-tools/scripts/roti/
+	
+  Modify roti_hook scripts
+	Change 'copy_exec /usr/sbin/quote /bin' to point to the location where libtpm utils are installed.
+	Similarly, change location of extend, takeown, createkey, listkeys, evictkey, loadkey
+
+  Modify /usr/share/initramfs-tools/init to add following lines before the "maybe_break mount"
+	maybe_break roti
+	[ "$quiet" != "y" ] && log_begin_msg "Running /scripts/roti"
+	run_scripts /scripts/roti
+	[ "$quiet" != "y" ] && log_end_msg
+
+  Update initrd
+	update-initramfs -c -k KERNEL_NAME
+
+  Copy kernel and initrd to image directory
+	cp /boot/kernel /var/lib/tftpboot/images/linux
+	cp /boot/initrd /var/lib/tftpboot/images/initrd.gz
+
+On Target
+
+7) Installation
+	reboot target
+	Enter BIOS, change boot option to be PXE. (On DELL M620, press F11 during dell boot logo to enter one time boot option and select NIC2 to be the boot device)	
+	In PXE boot menu, choose linux-tboot. (If no PXE boot menu shows up, check configuration of Cobbler)
+	The installation process may take several minutes, depending on the size of disk image.
+
+8) Post installation
+	After successful installation, system will reboot.
+	After reboot, ROTI proof can be found under /roti on the target.

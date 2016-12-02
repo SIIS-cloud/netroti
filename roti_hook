@@ -1,0 +1,162 @@
+# The Network-Based Root of Trust for Installation (NetROTI) additions are ...
+#
+#  Copyright (c) 2012 The Pennsylvania State University
+#  Systems and Internet Infrastructure Security Laboratory
+#
+# they were developed by:
+# 
+#  Joshua Schiffman <jschiffm@cse.psu.edu>
+#  Trent Jaeger <tjaeger@cse.psu.edu>
+#
+# Unless otherwise noted, all code additions are ...
+#
+#  * Licensed under the Apache License, Version 2.0 (the "License");
+#  * you may not use this file except in compliance with the License.
+#  * You may obtain a copy of the License at
+#  *
+#  * http://www.apache.org/licenses/LICENSE-2.0
+#  *
+#  * Unless required by applicable law or agreed to in writing, software
+#  * distributed under the License is distributed on an "AS IS" BASIS,
+#  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#  * See the License for the specific language governing permissions and
+#  * limitations under the License.
+
+
+
+#!/bin/sh
+PREREQ=""
+prereqs()
+{
+     echo "$PREREQ"
+}
+
+case $1 in
+prereqs)
+     prereqs
+     exit 0
+     ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+mkdir -p ${DESTDIR}/roti
+
+
+RMV=`dmesg | grep -i removable | mawk '{ print $NF }'`
+# Find the actual hard disk instead of the removable drive
+#if [ "${RMV}" == "sda" ]; then
+#        DISK="sdb"
+#else
+#        DISK="sda"
+#fi 
+
+# Disk is sda 
+DISK="sda"
+
+#Shh
+#dd if=/dev/${DISK} of=${DESTDIR}/roti/roti.mbr bs=512 count=1 2>/dev/null
+#cp /root/www/roti.mbr ${DESTDIR}/roti/roti.mbr
+#cp /root/www/roti.sf  ${DESTDIR}/roti/roti.sf
+
+# Generating partition table
+sfdisk /dev/sda -d > ${DESTDIR}/roti/roti.sf
+dd if=/dev/${DISK} of=${DESTDIR}/roti/roti.mbr bs=512 count=1 2>/dev/null
+
+
+# Add an includes file
+cat << 'EOF' > ${DESTDIR}/roti/installer_includes
+msg()
+{
+    if [ "$VERBOSE" == "y" ]; then
+        echo "[`date +%H:%M:%S:%N`] NETROTI: ${1}"
+    fi
+    echo "[`date +%H:%M:%S:%N`] ${1}" >> ${INSTALL_LOG}
+}
+
+# Hash a file, append to the roti log, and extend the TPM
+hlog()
+{
+        RES=`/bin/sha1sum ${1}`
+        echo ${RES} >> ${HASH_LOG}
+        HASH=`echo ${RES} | /bin/mawk '{ print $1 }'`
+        /bin/extend ${ROTI_PCR} ${HASH}
+        msg "Measured ${1}."
+}
+
+pause()
+{
+    if [ "$STEP" == "y" ]; then
+        read -p "Press enter to continue" REPLY
+    fi
+}
+
+STEP="y"
+INSTALL_LOG=/install.log
+VERBOSE="y"
+SERVER='192.168.0.1'
+IMG='base.000'
+MBR='/roti/roti.mbr'
+SF='/roti/roti.sf'
+RMV=`dmesg | grep -i removable | /bin/mawk '{ print $NF }'`
+BASE='/root'
+NET_LOG="/net.log"
+CLEANUP="n"
+DBG="y"
+
+# Find the actual hard disk instead of the removable drive
+#if [ "${RMV}" == "sda" ]; then
+#        DISK="sdb"
+#else
+#        DISK="sda"
+#fi 
+
+DISK="sda"
+
+HASH_TARGETS="home lib sbin usr bin root boot"
+HASH_LOG='hash.log'
+ROTI_MASK='0x002800'
+ROTI_PCR="11"
+
+EOF
+
+rm ${DESTDIR}/bin/gzip
+
+
+# Executables
+copy_exec /sbin/sfdisk /sbin/
+copy_exec /sbin/fdisk /sbin/
+copy_exec /usr/sbin/fsarchiver /sbin/
+copy_exec /sbin/tune2fs /sbin/
+copy_exec /sbin/mke2fs /sbin/
+copy_exec /sbin/mkfs.ext2 /sbin/
+copy_exec /sbin/mkfs.ext3 /sbin/
+copy_exec /sbin/mkfs.ext4 /sbin/
+copy_exec /sbin/mkfs /sbin/
+copy_exec /sbin/dhclient /sbin/
+#copy_exec /usr/sbin/partimage /sbin/
+copy_exec `which blkid` /sbin
+copy_exec `which date` /bin
+copy_exec `which gzip` /bin
+copy_exec `which ifconfig` /sbin
+copy_exec `which tar` /bin
+copy_exec `which mkswap` /sbin
+copy_exec `which sha1sum` /bin
+copy_exec `which partprobe` /bin
+#copy_exec /usr/bin/find /bin
+copy_exec `which bash` /bin
+copy_exec `which host` /bin
+copy_exec `which sfdisk` /sbin
+copy_exec /usr/bin/xargs /bin
+copy_exec /usr/sbin/quote /bin
+copy_exec /usr/sbin/extend /bin
+copy_exec /usr/sbin/takeown /bin
+copy_exec /usr/sbin/createkey /bin
+copy_exec /usr/sbin/listkeys /bin
+copy_exec /usr/sbin/evictkey /bin
+copy_exec /usr/sbin/loadkey /bin
+copy_exec /usr/bin/tail /bin
+copy_exec /usr/bin/mawk /bin
+copy_exec /usr/bin/free /bin/free
+copy_exec /sbin/swapon /bin/swapon
+copy_exec `which ssh-keygen` /bin/ssh-keygen
